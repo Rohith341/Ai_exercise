@@ -105,3 +105,4 @@ streamlit run app.py
 
 This project is licensed under the MIT License - see the LICENSE file for details. "# mini_project" 
 "# Ai_exercise" 
+"# Minor-Project" 
