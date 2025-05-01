@@ -676,29 +676,64 @@ def show_exercise_page():
     
     # Exercise instructions
     exercise_instructions = {
-        "Push-ups": [
-            "Start in a plank position with arms shoulder-width apart",
-            "Keep your body in a straight line from head to heels",
-            "Lower your body until your chest nearly touches the ground",
-            "Push back up to the starting position",
-            "Keep your core tight throughout the movement"
-        ],
-        "Squats": [
-            "Stand with feet shoulder-width apart",
-            "Keep your chest up and back straight",
-            "Lower your body as if sitting back into a chair",
-            "Keep your knees in line with your toes",
-            "Go down until your thighs are parallel to the ground"
-        ],
-        "Lunges": [
-            "Stand with feet hip-width apart",
-            "Step forward with one leg",
-            "Lower your body until both knees are bent at 90 degrees",
-            "Keep your front knee aligned with your ankle",
-            "Keep your torso upright throughout the movement"
-        ]
-    }
-    
+    "Push-ups": [
+        "Start in a plank position with arms shoulder-width apart",
+        "Keep your body in a straight line from head to heels",
+        "Lower your body until your chest nearly touches the ground",
+        "Push back up to the starting position",
+        "Keep your core tight throughout the movement"
+    ],
+    "Squats": [
+        "Stand with feet shoulder-width apart",
+        "Keep your chest up and back straight",
+        "Lower your body as if sitting back into a chair",
+        "Keep your knees in line with your toes",
+        "Go down until your thighs are parallel to the ground"
+    ],
+    "Lunges": [
+        "Stand with feet hip-width apart",
+        "Step forward with one leg",
+        "Lower your body until both knees are bent at 90 degrees",
+        "Keep your front knee aligned with your ankle",
+        "Keep your torso upright throughout the movement"
+    ],
+    "Plank": [
+        "Start on your elbows and toes with your body in a straight line",
+        "Engage your core and glutes",
+        "Keep your neck and spine neutral",
+        "Hold the position without letting your hips drop",
+        "Maintain even breathing throughout"
+    ],
+    "Bicep Curls": [
+        "Stand with feet shoulder-width apart, arms at your sides",
+        "Hold weights with palms facing forward",
+        "Bend your elbows to lift the weights toward your shoulders",
+        "Lower the weights slowly back to the starting position",
+        "Keep your upper arms stationary during the movement"
+    ],
+    "Shoulder Press": [
+        "Hold weights at shoulder height with palms facing forward",
+        "Press the weights upward until your arms are fully extended",
+        "Keep your back straight and avoid arching",
+        "Lower the weights slowly back to shoulder level",
+        "Engage your core for balance and stability"
+    ],
+    "Deadlifts": [
+        "Stand with feet hip-width apart, barbell over your midfoot",
+        "Bend at your hips and knees to grip the barbell",
+        "Keep your back flat and chest up",
+        "Lift the bar by straightening your hips and knees",
+        "Lower the bar to the ground by pushing your hips back"
+    ],
+    "Jumping Jacks": [
+        "Stand upright with your legs together and arms at your sides",
+        "Jump while spreading your legs and raising your arms overhead",
+        "Land softly with your knees slightly bent",
+        "Jump back to the starting position",
+        "Repeat the movement at a steady pace"
+    ]
+ }
+
     # Show instructions for selected exercise
     with st.expander("📝 Exercise Instructions", expanded=True):
         if exercise_type in exercise_instructions:
@@ -935,14 +970,16 @@ def show_exercise_page():
 
         if st.session_state.get('exercise_uploaded', False):
             # Display summary metrics
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.metric("Total Reps", st.session_state.exercise_data['reps'])
+                st.metric("correct Reps", st.session_state.exercise_data['reps'])
             with col2:
-                st.metric("Form Score", f"{st.session_state.exercise_data['form_score']:.1f}%")
+                st.metric("Incorrect Reps", st.session_state.exercise_data['incorrect_reps'])
             with col3:
-                st.metric("Duration", f"{st.session_state.exercise_data['duration']} sec")
+                st.metric("Form Score", f"{st.session_state.exercise_data['form_score']:.1f}%")
             with col4:
+                st.metric("Duration", f"{st.session_state.exercise_data['duration']} sec")
+            with col5:
                 st.metric("Calories", f"{st.session_state.exercise_data['calories_burned']:.1f}")
 
             # Form feedback

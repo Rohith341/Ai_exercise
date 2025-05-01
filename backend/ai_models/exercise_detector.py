@@ -17,6 +17,13 @@ class ExerciseDetector:
         self.incorrect_reps = 0
         self.stage = None
         self.form_feedback = []
+        self.rep_counter = 0
+        self.incorrect_reps = 0
+        self.stage = None
+        self.rep_in_progress = False       
+        self.down_score = 0
+  # <-- Add this line
+
     
     def detect_pose(self, frame) -> Dict:
         """Detect human pose in the frame and return landmark info"""
@@ -62,7 +69,7 @@ class ExerciseDetector:
         return angle
     
     def analyze_pushup(self, landmarks: List[Dict]) -> Dict:
-        """Analyze push-up exercise"""
+        """Analyze push-up exercise with more forgiving angle detection"""
         left_shoulder = (landmarks[11]['x'], landmarks[11]['y'])
         left_elbow = (landmarks[13]['x'], landmarks[13]['y'])
         left_wrist = (landmarks[15]['x'], landmarks[15]['y'])
@@ -80,22 +87,25 @@ class ExerciseDetector:
         feedback = []
         is_correct_form = True
 
-        if not (70 <= left_arm_angle <= 110 and 70 <= right_arm_angle <= 110):
-            score -= 30
-            feedback.append("Maintain arms at ~90° angle during push-up")
+        # More forgiving angle checks
+        if not (60 <= left_arm_angle <= 120 and 60 <= right_arm_angle <= 120):
+            score -= 20
+            feedback.append("Try to maintain arms at ~90° angle")
             is_correct_form = False
 
-        if body_angle < 160:
-            score -= 30
-            feedback.append("Keep body straight (no sagging or arching)")
+        if body_angle < 150:  # More forgiving body angle
+            score -= 20
+            feedback.append("Keep body relatively straight")
             is_correct_form = False
 
-        # Rep Counting
-        if avg_arm_angle < 90 and self.stage != 'down':
+        # Improved rep counting logic
+        if avg_arm_angle < 100 and self.stage != 'down':
             self.stage = 'down'
-        elif avg_arm_angle > 160 and self.stage == 'down':
+        elif avg_arm_angle > 150 and self.stage == 'down':
             self.stage = 'up'
-            if is_correct_form:
+            # Count rep based on form score (65% threshold)
+            final_score = max(0, score)
+            if final_score >= 65:
                 self.rep_counter += 1
             else:
                 self.incorrect_reps += 1
@@ -114,7 +124,7 @@ class ExerciseDetector:
         }
     
     def analyze_squat(self, landmarks: List[Dict]) -> Dict:
-        """Analyze squat exercise"""
+        """Analyze squat exercise with more forgiving angle detection"""
         left_hip = (landmarks[23]['x'], landmarks[23]['y'])
         left_knee = (landmarks[25]['x'], landmarks[25]['y'])
         left_ankle = (landmarks[27]['x'], landmarks[27]['y'])
@@ -132,26 +142,29 @@ class ExerciseDetector:
         feedback = []
         is_correct_form = True
         
-        if avg_knee_angle < 70:
-            score -= 30
+        # More forgiving angle checks
+        if avg_knee_angle < 60:  # More forgiving lower limit
+            score -= 20
             feedback.append("Don't squat too low")
             is_correct_form = False
-        elif avg_knee_angle > 150:
-            score -= 30
+        elif avg_knee_angle > 160:  # More forgiving upper limit
+            score -= 20
             feedback.append("Go lower into your squat")
             is_correct_form = False
 
-        if hip_angle < 45:
+        if hip_angle < 40:  # More forgiving hip angle
             score -= 20
-            feedback.append("Keep your back straight")
+            feedback.append("Keep your back relatively straight")
             is_correct_form = False
 
-        # Rep Counting
-        if avg_knee_angle < 110 and self.stage != 'down':
+        # Improved rep counting logic
+        if avg_knee_angle < 120 and self.stage != 'down':
             self.stage = 'down'
-        elif avg_knee_angle > 160 and self.stage == 'down':
+        elif avg_knee_angle > 150 and self.stage == 'down':
             self.stage = 'up'
-            if is_correct_form:
+            # Count rep based on form score (65% threshold)
+            final_score = max(0, score)
+            if final_score >= 65:
                 self.rep_counter += 1
             else:
                 self.incorrect_reps += 1
@@ -169,46 +182,56 @@ class ExerciseDetector:
             'stage': self.stage
         }
     
+    from typing import List, Dict
+
+    from typing import List, Dict
+
     def analyze_lunge(self, landmarks: List[Dict]) -> Dict:
-        """Analyze lunge exercise"""
+        """Analyze lunge exercise with reliable correct/incorrect rep tracking"""
+
+        # Extract joint coordinates
         left_hip = (landmarks[23]['x'], landmarks[23]['y'])
         left_knee = (landmarks[25]['x'], landmarks[25]['y'])
         left_ankle = (landmarks[27]['x'], landmarks[27]['y'])
         right_hip = (landmarks[24]['x'], landmarks[24]['y'])
         right_knee = (landmarks[26]['x'], landmarks[26]['y'])
         right_ankle = (landmarks[28]['x'], landmarks[28]['y'])
+        left_shoulder = (landmarks[11]['x'], landmarks[11]['y'])
+
+        # Calculate angles
         front_knee_angle = self.calculate_angle(left_hip, left_knee, left_ankle)
         back_knee_angle = self.calculate_angle(right_hip, right_knee, right_ankle)
-        torso_angle = self.calculate_angle((landmarks[11]['x'], landmarks[11]['y']), left_hip, (left_hip[0], left_hip[1] + 0.5))
+        torso_angle = self.calculate_angle(left_shoulder, left_hip, left_knee)
         avg_knee_angle = (front_knee_angle + back_knee_angle) / 2
+
         score = 100
         feedback = []
-        is_correct_form = True
 
-        if not (85 <= front_knee_angle <= 95):
-            score -= 30
-            feedback.append("Front knee must be ~90°")
-            is_correct_form = False
-
-        if not (85 <= back_knee_angle <= 95):
-            score -= 30
-            feedback.append("Back knee must be ~90°")
-            is_correct_form = False
-
-        if torso_angle < 80:
+        # Angle checks (for feedback and scoring)
+        if not (70 <= front_knee_angle <= 110):
             score -= 20
-            feedback.append("Keep torso upright")
-            is_correct_form = False
+            feedback.append("Front knee should be around 90°")
 
-        # Rep Counting
-        if avg_knee_angle < 100 and self.stage != 'down':
+        if not (70 <= back_knee_angle <= 110):
+            score -= 20
+            feedback.append("Back knee should be around 90°")
+
+        if torso_angle < 60:
+            score -= 20
+            feedback.append("Keep torso more upright")
+
+        # Rep stage logic
+        if avg_knee_angle < 110 and self.stage != 'down':
             self.stage = 'down'
-        elif avg_knee_angle > 160 and self.stage == 'down':
+            self.down_score = score  # Store the score when user is in bottom position
+
+        elif avg_knee_angle > 150 and self.stage == 'down':
             self.stage = 'up'
-            if is_correct_form:
+            if self.down_score >= 65:
                 self.rep_counter += 1
             else:
                 self.incorrect_reps += 1
+            self.down_score = 0  # Reset for next rep
 
         return {
             'score': max(0, score),
@@ -218,10 +241,13 @@ class ExerciseDetector:
                 'back_knee_angle': back_knee_angle,
                 'torso_angle': torso_angle
             },
-            'reps': self.rep_counter,
+            'reps': self.rep_counter + self.incorrect_reps,
             'incorrect_reps': self.incorrect_reps,
+            'total_reps': self.rep_counter + self.incorrect_reps,
             'stage': self.stage
         }
+
+
     
     def analyze_plank(self, landmarks: List[dict]) -> dict:
         """Analyze plank exercise (template for new exercises)."""
@@ -260,7 +286,7 @@ class ExerciseDetector:
         }
 
     def analyze_bicep_curl(self, landmarks: List[Dict]) -> Dict:
-        """Analyze bicep curl exercise (assume right arm for simplicity)"""
+        """Analyze bicep curl exercise with more forgiving angle detection"""
         right_shoulder = (landmarks[12]['x'], landmarks[12]['y'])
         right_elbow = (landmarks[14]['x'], landmarks[14]['y'])
         right_wrist = (landmarks[16]['x'], landmarks[16]['y'])
@@ -269,21 +295,24 @@ class ExerciseDetector:
         feedback = []
         is_correct_form = True
 
-        if elbow_angle > 60:
-            feedback.append("Curl your arm more (lower elbow angle)")
-            score -= 30
+        # More forgiving angle checks
+        if elbow_angle > 70:  # More forgiving upper limit
+            feedback.append("Try to curl your arm more")
+            score -= 20
             is_correct_form = False
-        if elbow_angle < 30:
-            feedback.append("Don't over-curl (raise elbow angle)")
-            score -= 10
+        if elbow_angle < 20:  # More forgiving lower limit
+            feedback.append("Don't over-curl")
+            score -= 20
             is_correct_form = False
 
-        # Rep counting
-        if elbow_angle < 40 and self.stage != 'up':
+        # Improved rep counting logic
+        if elbow_angle < 50 and self.stage != 'up':  # More forgiving up position
             self.stage = 'up'
-        elif elbow_angle > 120 and self.stage == 'up':
+        elif elbow_angle > 130 and self.stage == 'up':  # More forgiving down position
             self.stage = 'down'
-            if is_correct_form:
+            # Count rep based on form score (65% threshold)
+            final_score = max(0, score)
+            if final_score >= 80:
                 self.rep_counter += 1
             else:
                 self.incorrect_reps += 1
